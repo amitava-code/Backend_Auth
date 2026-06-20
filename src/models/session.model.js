@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import { refreshToken } from "../controllers/auth.controller";
 
 const sessionSchema = new mongoose.Schema({
     user: {
@@ -7,7 +6,7 @@ const sessionSchema = new mongoose.Schema({
         ref: "users",
         required: [true, "user is required"]
     },
-    refreshToken:{
+    refreshTokenHash:{
         type: String,
         required: [true, "Refresh token is required "]
     },
