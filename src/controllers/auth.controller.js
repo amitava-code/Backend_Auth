@@ -29,10 +29,23 @@ export async function register(req, res){
         password: hashedPassword
     })
 
-    const token = jwt.sign({
+    const accessToken = jwt.sign({
         id:user._id
     }, config.JWT_SECRET,{
-        expiresIn: "2d"
+        expiresIn: "15m"
+    })
+
+    const refreshToken = jwt.sign({
+        id:user._id
+    }, config.JWT_SECRET,{
+        expiresIn: "7d"
+    })
+
+    res.cookie("refresToken", refreshToken, {
+        httpOnly: true,          // client-side js run can not access the cookie
+        secure: true,
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000
     })
 
     res.status(201).json({
@@ -40,7 +53,7 @@ export async function register(req, res){
         user:{
             username: user.username,
             email: user.email
-        }, token
+        }, accessToken
     })
 
 
