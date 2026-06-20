@@ -2,6 +2,7 @@ import userModel from "../models/user.model.js";
 import crypto from 'crypto';
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
+import { decode } from "punycode";
 
 
 export async function register(req, res){
@@ -41,7 +42,7 @@ export async function register(req, res){
         expiresIn: "7d"
     })
 
-    res.cookie("refresToken", refreshToken, {
+    res.cookie("refreshToken", refreshToken, {
         httpOnly: true,          // client-side js run can not access the cookie
         secure: true,
         sameSite: "strict",
@@ -80,6 +81,45 @@ export async function getMe(req, res){
             username: user.username,
             email: user.email
         }
+    })
+
+
+}
+
+export async function refreshToken(req,res){
+
+    const refreshToken = req.cookies.refreshToken
+
+    if(!refreshToken){
+        return res.status(409).json({
+            message:"Refresh token not found"
+        })
+    }
+
+    const decoded = jwt.verify(refreshToken, config.JWT_SECRET)
+
+    const accessToken = jwt.sign({
+        id: decoded.id
+    }, config.JWT_SECRET,{
+        expiresIn :"15m"
+    })
+
+    const newRefreshToken = jwt.sign({
+        id:decoded.id
+    }, config.JWT_SECRET,{
+        expiresIn: "7d"
+    })
+
+    res.cookie("refreshToken", newRefreshToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite:"strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000
+    })
+
+    res.status(200).json({
+        message:"Access token refreshed successfully",
+        accessToken
     })
 
 
