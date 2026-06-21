@@ -4,7 +4,7 @@ import config from '../config/config.js'
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        typr: 'OAuth2',
+        type: 'OAuth2',
         user: config.GOOGLE_USER,
         clientId: config.GOOGLE_CLIENT_ID,
         clientSecret: config.GOOGLE_CLIENT_SECRET,
