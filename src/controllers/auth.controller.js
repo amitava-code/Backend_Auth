@@ -1,8 +1,11 @@
 import userModel from "../models/user.model.js";
-import crypto from 'crypto';
+import crypto, { verify } from 'crypto';
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
 import sessionModel from "../models/session.model.js";
+import { sendEmail } from "../services/email.service.js";
+import { generateOtp, getOtpHtml} from "../utils/utils.js";
+import otpModel from "../models/otp.model.js";
 
 export async function register(req, res){
 
@@ -29,43 +32,28 @@ export async function register(req, res){
         password: hashedPassword
     })
 
-      const refreshToken = jwt.sign({
-        id:user._id
-    }, config.JWT_SECRET,{
-        expiresIn: "7d"
-    })
 
-    const refreshTokenHash = crypto.createHash("sha256").update(refreshToken).digest("hex")
+    const otp = generateOtp()
+    const html = getOtpHtml(otp)
 
-    const session = await sessionModel.create({
+
+    const otpHash = crypto.createHash("sha256").update(otp).digest("hex")
+    await otpModel.create({
+        email,
         user: user._id,
-        refreshTokenHash,
-        ip: req.ip,
-        userAgent: req.headers[ "user-agent"]
+        otpHash
     })
 
+    await sendEmail(email, "OTP Verification", `Your OTP code is ${otp}`, html)
 
-    const accessToken = jwt.sign({
-        id:user._id,
-        sessionId: session._id,
-    }, config.JWT_SECRET,{
-        expiresIn: "15m"
-    })
-
-
-    res.cookie("refreshToken", refreshToken, {
-        httpOnly: true,          // client-side js run can not access the cookie
-        secure: true,
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000
-    })
 
     res.status(201).json({
         message: "User resgistered successfully",
         user:{
             username: user.username,
-            email: user.email
-        }, accessToken
+            email: user.email,
+            verified: user.verified
+        }
     })
 
 
@@ -81,6 +69,12 @@ export async function login(req, res){
     if(!user){
         return res.status(401).json({
             message:"Invalid email or password"
+        })
+    }
+
+    if(!user.verified){
+        return res.status(401).json({
+            message:"Email is not verified"
         })
     }
 
