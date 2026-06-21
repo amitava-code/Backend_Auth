@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
 import sessionModel from "../models/session.model.js";
+import { decode } from "punycode";
 
 export async function register(req, res){
 
@@ -193,3 +194,29 @@ export async function logout(req, res){
     
 }
 
+
+export async function logoutAll(req, res){
+
+    const refreshToken = req.cookies.refreshToken
+
+    if(!refreshToken){
+        return res.status(400).json({
+            message:" Refresh Token not foud "
+        })
+    }
+
+    const decoded = jwt.verify(refreshToken, config.JWT_SECRET)
+
+    await sessionModel.updateMany({
+        user: decode.id,
+        revoked: false
+    },{
+        revoked: true
+    })
+
+    res.clearCookie("refreshToken")
+
+    res.status(200).json({
+        messgae:"Logged Out from all devices successfully "
+    })
+}

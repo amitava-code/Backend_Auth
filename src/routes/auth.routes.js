@@ -25,5 +25,10 @@ authRouter.get("/refresh-token", authController.refreshToken)
  */
 authRouter.get("/logout", authController.logout)
 
+/**
+ * GET /api/auht/logout-all
+ */
+authRouter.get("/logout-all", authController.logoutAll)
+
 
 export default authRouter;
