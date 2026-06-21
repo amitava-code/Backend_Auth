@@ -109,6 +109,21 @@ export async function refreshToken(req,res){
 
     const decoded = jwt.verify(refreshToken, config.JWT_SECRET)
 
+    const refreshTokenHash = crypto.createHash("sha256").update(refreshToken).digest("hex");
+
+    const session = await sessionModel.findOne({
+        refreshTokenHash,
+        revoked: false
+    })
+
+    if (!session){
+
+        return res.status(401).json({
+            message: "Invalid refresh token , no active session"
+        })
+
+    }
+
     const accessToken = jwt.sign({
         id: decoded.id
     }, config.JWT_SECRET,{
@@ -120,6 +135,12 @@ export async function refreshToken(req,res){
     }, config.JWT_SECRET,{
         expiresIn: "7d"
     })
+
+    const newRefreshTokenHash = crypto.createHash("sha256").update(newRefreshToken).digest("hex")
+
+    session.refreshTokenHash = newRefreshTokenHash
+    await session.save()
+
 
     res.cookie("refreshToken", newRefreshToken, {
         httpOnly: true,
@@ -170,8 +191,5 @@ export async function logout(req, res){
     })
 
     
-
-
-
 }
 
